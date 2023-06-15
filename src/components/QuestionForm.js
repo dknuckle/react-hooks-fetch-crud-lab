@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-function QuestionForm(props) {
+function QuestionForm({ onAddQuestion }) {
   const [formData, setFormData] = useState({
     prompt: "",
     answer1: "",
@@ -9,6 +9,9 @@ function QuestionForm(props) {
     answer4: "",
     correctIndex: 0,
   });
+  const [isMounted, setIsMounted] = useState(true);
+  const [currentId, setCurrentId] = useState(1); // Counter for generating IDs
+
 
   function handleChange(event) {
     setFormData({
@@ -19,8 +22,47 @@ function QuestionForm(props) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    console.log(formData);
+    const newQuestion = {
+      id: currentId, // Include the ID
+      prompt: formData.prompt,
+      answers: [
+        formData.answer1,
+        formData.answer2,
+        formData.answer3,
+        formData.answer4,
+      ],
+      correctIndex: parseInt(formData.correctIndex),
+    };
+
+    fetch("http://localhost:4000/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newQuestion),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (isMounted) {
+        onAddQuestion(data);
+        setFormData({
+          prompt: "",
+          answer1: "",
+          answer2: "",
+          answer3: "",
+          answer4: "",
+          correctIndex: 0,
+        });
+      }
+        setCurrentId(currentId + 1); // Increment the ID counter
+      })
+      .catch((error) => console.log(error));
   }
+
+  useEffect(() => {
+    return () => {
+      setIsMounted(false);
+      // Cleanup function to cancel any ongoing requests
+    };
+  }, []);
 
   return (
     <section>
@@ -78,10 +120,10 @@ function QuestionForm(props) {
             value={formData.correctIndex}
             onChange={handleChange}
           >
-            <option value="0">{formData.answer1}</option>
-            <option value="1">{formData.answer2}</option>
-            <option value="2">{formData.answer3}</option>
-            <option value="3">{formData.answer4}</option>
+            <option value="0">Answer 1</option>
+            <option value="1">Answer 2</option>
+            <option value="2">Answer 3</option>
+            <option value="3">Answer 4</option>
           </select>
         </label>
         <button type="submit">Add Question</button>
